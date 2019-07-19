@@ -1,7 +1,8 @@
+import tensorflow as tf
 from data_load import load_vocab
-from modules import get_token_embeddings
+from modules import get_token_embeddings, multihead_attention, ff, positional_encoding
 
-class Transformer:
+class Transformer(object):
     '''
     xs: tuple of
         x: int32 tensor. (N, T1)
@@ -48,4 +49,22 @@ class Transformer:
                                               training = training,
                                               causality = False)
 
+                    # feed forward
+                    enc = ff(enc, num_units=[self.hp.d_ff, self.hp.d_model])
 
+            memory = enc
+
+            return memory, sents1
+
+    def train(self, xs, ys):
+        '''
+        Returns
+        loss: scalar.
+        train_op: training operation
+        global_step: scalar.
+        summaries: training summary node
+        '''
+        # forward
+        memory, sents1 = self.encode(xs)
+
+        return None, None, None, None
