@@ -219,6 +219,41 @@ def ff(inputs, num_units, scope="positionwise_feedforward"):
     return outputs
 
 
+def label_smoothing(inputs, epsilon=0.1):
+    '''Applies label smoothing. See 5.4 and https://arxiv.org/abs/1512.00567.
+    inputs: 3d tensor. [N, T, V], where V is the number of vocabulary.
+    epsilon: Smoothing rate.
+    
+    For example,
+    
+    ```
+    import tensorflow as tf
+    inputs = tf.convert_to_tensor([[[0, 0, 1], 
+       [0, 1, 0],
+       [1, 0, 0]],
+      [[1, 0, 0],
+       [1, 0, 0],
+       [0, 1, 0]]], tf.float32)
+       
+    outputs = label_smoothing(inputs)
+    
+    with tf.Session() as sess:
+        print(sess.run([outputs]))
+    
+    >>
+    [array([[[ 0.03333334,  0.03333334,  0.93333334],
+        [ 0.03333334,  0.93333334,  0.03333334],
+        [ 0.93333334,  0.03333334,  0.03333334]],
+       [[ 0.93333334,  0.03333334,  0.03333334],
+        [ 0.93333334,  0.03333334,  0.03333334],
+        [ 0.03333334,  0.93333334,  0.03333334]]], dtype=float32)]   
+    ```    
+    '''
+    V = inputs.get_shape().as_list()[-1] # number of channels
+
+    return ((1-epsilon) * inputs) + (epsilon / V)
+
+
 def positional_encoding(inputs,
                         maxlen,
                         masking=True,
@@ -256,3 +291,15 @@ def positional_encoding(inputs,
             outputs = tf.where(tf.equal(inputs, 0), inputs, outputs)
 
         return tf.to_float(outputs)
+
+def noam_scheme(init_lr, global_step, warmup_steps=4000.):
+    '''Noam scheme learning rate decay
+    init_lr: initial learning rate. scalar.
+    global_step: scalar.
+    warmup_steps: scalar. During warmup_steps, learning rate increases
+        until it reaches init_lr.
+    '''
+    step = tf.cast(global_step + 1, dtype=tf.float32)
+
+    return init_lr * warmup_steps ** 0.5 * tf.minimum(step * warmup_steps ** -1.5, step ** -0.5)
+
